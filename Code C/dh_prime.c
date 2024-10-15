@@ -133,6 +133,7 @@ long seek_generator(long start,long p){
 //   assert (generateur != -1);
 // }
 
+
 long int_pow(long a, long e) {
   /// \brief puissance russe
   /// \param[in] : a l'entier et e l'exposant
