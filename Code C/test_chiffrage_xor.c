@@ -1,42 +1,72 @@
 #include "chiffrage_xor.h"  // Inclusion du fichier d'en-tête pour accéder aux fonctions XOR
 #include <stdio.h>  // Pour l'affichage des résultats avec printf
 #include <string.h> // Pour manipuler les chaînes de caractères (strlen, etc.)
-
-// int taille_key(){ //renvoie la taille de la clé
-//     //ouvrir le fichier de clés 
-//     // lire une ligne du fichier while( c == '\n' || c == (fin du fichier))  on veut que une clé 
-//     // c c'est le caractère courant
-//     // on va compter à chaque caractère et incrémenter la variable taille 
-// }
+#define TAILLE_CLE 25
 
 
-int main (void){
+int main(void){
+    printf("---------------- Test fonction XOR chiffrement/déchiffrement ---------------- \n\n ");
 
-    // int taille = 0; //taille du message 
+    // Clé qui va permettre le chiffrement
+    char* key = "rutabaga";
+    unsigned char *key_unsigned = (unsigned char *)key;
+    unsigned char *message;
+    long taille_fichier;
 
-    printf("****************** Début des tests de chiffrage_xor ******************\n\n");
-    printf("TEST 1 : (fichier cbc_adijd_accents-utf-8.txt)");
-    
-    /* Faire une fonction pour généraliser pour passer le ficher que l'on veut */
+    // Ouverture du fichier à chiffrer
+    FILE* fich = NULL; 
 
-    // ouvrir un fichier open()
-    // le parcourir tant qu'on est pas à la fin et incrémenter la variable taille (taille du message)
-    
-    // crypter le message à l'aide de la fonction et de la clé (il faut une clé)
-    
-    // remettre la taille à 0 pour le prochain fichier (mais si on est dans la fonction pas besoin car variable local dans la fonction)
-    // fermer le fichier à la fin close()
-
-
-    printf(" test fonction gen_key : \n");
-    unsigned char * cle = gen_key(12);
-    printf("La clé générée est : \n");
-    for (int i = 0; i < 3; i++)
-    {
-        printf("%c",cle[i]);
+    // On ouvre le fichier avec le message que l'on doit chiffrer
+    fich  = fopen("../script/CRYPT/tests/ref/msg2.txt", "rb");
+    if (fich == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        exit(1);
     }
-    printf("\n");
-    
+
+    //On prends la taille du message dans le fichier
+    fseek(fich, 0, SEEK_END);
+    taille_fichier = ftell(fich);  // Obtenir la taille du fichier
+    rewind(fich);  // Remettre le curseur au début du fichier
+
+    // Allouer suffisamment de mémoire pour stocker tout le fichier
+    message = (unsigned char*) malloc(sizeof(unsigned char) * taille_fichier + 1);
+    if (message == NULL) {
+        perror("Erreur allocation mémoire");
+        fclose(fich);
+        exit(1);
+    }
+
+    // Lecture dans le fichier et on met ça dans une variable unsigned char*
+    if(fread(message, 1, taille_fichier, fich) != (size_t)taille_fichier){
+        perror("Erreur lecture fichier : ");
+        free(message);
+        fclose(fich);
+        exit(1);
+    }
+
+    message[taille_fichier] = '\0'; 
+
+    // On chiffre ensuite le message
+    unsigned char * msg_chiffre = chiffrageXor(message, key_unsigned, taille_fichier);
+
+    // On déchiffre le message
+    unsigned char *  msg_clair = chiffrageXor(msg_chiffre, key_unsigned,taille_fichier); //on doit retomber sur le message de base
+
+    // On 
+    if(memcmp(message, msg_clair, taille_fichier) == 0){
+        printf("Same content \n");
+    }
+    else{
+        printf("Not the same content \n");
+    }
+
+    // On libère la mémoire et on ferme les fichiers
+    // free(hex_contenu);
+    // free(hex_result_final);
+    free(message);
+    free(msg_chiffre);
+    free(msg_clair);
+    fclose(fich);
 
     return 0;
 }

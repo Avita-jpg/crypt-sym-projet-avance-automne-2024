@@ -21,7 +21,7 @@ unsigned char * gen_key(int longueur);
 /*
  * Fonction qui permet de chiffrer et de déchiffrer un message caractère par caractère à l'aide d'un XOR
  */
-unsigned char * chiffrageXor(unsigned char * msg, unsigned char * key);
+unsigned char * chiffrageXor(unsigned char * msg, unsigned char * key, int taille_msg);
 
 
 #endif // CHIFFRAGE_XOR_H
