@@ -4,51 +4,17 @@
 #include <string.h> // Pour manipuler les chaînes de caractères (strlen, etc.)
 #include <time.h>
 
-/**************************      Fonction génération d'une clé alphanumérique aléatoirement      **************************/
+/**************************      Fonction masque jetable      **************************/
 
-unsigned char* gen_key(int longueur){
-    const char caracteres[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" ;
-    unsigned char * new_key = (unsigned char *)malloc(longueur * sizeof(unsigned char)); // allocation de la clé
-
-    srand(time(0));
-
-    //on va créer la clé avec ses caractères choisis aléatoirement
-    int index = (rand() % (sizeof(caracteres) - 1)); // On sélectionne un index aléatoire dans le tableau caracteres
-    for (int i = 0; i < longueur; i++)
-    {
-        new_key[i] = (unsigned char)caracteres[index]; //on associe à notre clé le caractère généré
-        index = (rand() % (sizeof(caracteres) - 1));
-    }
-    return new_key;
-}
-
-
-/**************************      Fonction chiffrage XOR      **************************/
-
-// Fonction qui permet et le chiffrement et le déchiffrement d'un message 
-
-unsigned char * chiffrageXor(unsigned char * msg, unsigned char * key, int msg_len){
-    int key_len = strlen((char*)key);
-
-    unsigned char *cipher = (unsigned char *)malloc(msg_len * sizeof(unsigned char)); //allocation pour le message crypté
-    if (cipher == NULL) {
-        perror("Erreur malloc\n");
-        exit(1);  // Code de retour d'erreur
-    }
-
-    for (int i=0, j=0; i < msg_len; i++){
-        cipher[i] = msg[i] ^ key[j];
-        j = (j+1) % key_len;
-    }
+unsigned char * masque_jetable(unsigned char * msg, unsigned char * key, int taille_msg){
+    unsigned char * cipher = chiffrageXor(msg,key,taille_msg); //on chiffre le message avec la clé qui a préalablement été générée avant
     return cipher;
 }
 
-void test_chiffrage_xor(char *fich_name, char *key){
+//fonction de test sur le masque jetable
+void tests_masque_jetable(char *fich_name){
 
     printf("le fichier testé est :  %s \n", fich_name);
-
-    // On transforme la clé en unsigned char
-    unsigned char *key_unsigned = (unsigned char *)key;
 
     unsigned char *message;
     long taille_fichier;
@@ -57,7 +23,7 @@ void test_chiffrage_xor(char *fich_name, char *key){
     FILE* fich = NULL; 
 
     // On ouvre le fichier avec le message que l'on doit chiffrer
-    fich  = fopen("../script/CRYPT/tests/ref/msg2.txt", "rb");
+    fich  = fopen(fich_name, "rb");
 
     if (fich == NULL) {
         perror("Erreur lors de l'ouverture du fichier");
@@ -87,11 +53,14 @@ void test_chiffrage_xor(char *fich_name, char *key){
 
     message[taille_fichier] = '\0'; 
 
+    // On crée une clé générée aléatoirement (et de taille égale ou supérieure au message)
+    unsigned char *key = gen_key(taille_fichier+1); 
+
     // On chiffre ensuite le message
-    unsigned char * msg_chiffre = chiffrageXor(message, key_unsigned, taille_fichier);
+    unsigned char * msg_chiffre = masque_jetable(message, key, taille_fichier);
 
     // On déchiffre le message
-    unsigned char *  msg_clair = chiffrageXor(msg_chiffre, key_unsigned,taille_fichier); //on doit retomber sur le message de base
+    unsigned char *  msg_clair = masque_jetable(msg_chiffre, key,taille_fichier); //on doit retomber sur le message de base
 
     // On compare les 2 messages
     if(memcmp(message, msg_clair, taille_fichier) == 0){
@@ -110,6 +79,4 @@ void test_chiffrage_xor(char *fich_name, char *key){
     free(msg_chiffre);
     free(msg_clair);
     fclose(fich);
-
 }
-
