@@ -1,34 +1,27 @@
-#! /bin/sh
-#il faudra donc que tous nos fichiers possèdent les bons includes
-CC=gcc
-CFLAGS=-Wall
-LDLIBS=-lm
-RM=rm -f
-OBJ=  test_chiffrage_xor.o cbc.o chiffrage_xor.o dh_prime.o 
-# stats.o pour après
-# EXE_CBC=cbc
-# EXE_CHIFFRAGE_XOR=chiffrage_xor
-EXE_TEST_CHIFFRAGE_XOR=test_chiffrage_xor 
-# Pour produire les fichiers exécutables
-$(EXE_TEST_CHIFFRAGE_XOR):$(OBJ)
-	$(CC) $(CFLAGS) -o $(EXE_TEST_CHIFFRAGE_XOR) $(OBJ) $(LDLIBS)
+# Nom de l'exécutable
+EXEC = test_chiffrage_xor
 
-# $(EXE_CBC):$(OBJ)
-# 	$(CC) $(CFLAGS) $(OBJ) -o $(EXE_CBC) $(LDLIBS)
+# Options de compilation
+CFLAGS = -Wall -Wextra -Werror -pedantic
 
-# $(EXE_CHIFFRAGE_XOR):$(OBJ)
-# 	$(CC) $(CFLAGS) $(OBJ) -o $(EXE_TEST_CHIFFRAGE_XOR) $(LDLIBS)
+# Les fichiers sources et objets
+SRC = chiffrage_xor.c test_chiffrage_xor.c
+OBJ = $(SRC:.c=.o)
 
-# Pour produire les fichiers objets
-test_chiffrage_xor.o:test_chiffrage_xor.c chiffrage_xor.h
-	$(CC) $(CFLAGS) -c test_chiffrage_xor.c
-cbc.o:cbc.c 
-	$(CC) $(CFLAGS) -c cbc.c
-chiffrage_xor.o:chiffrage_xor.c 
-	$(CC) $(CFLAGS) -c chiffrage_xor.c
-dh_prime.o:dh_prime.c dh_prime.h
-	$(CC) $(CFLAGS) -c dh_prime.c
-# Pour effacer les objets et les exécutables
+# La règle principale pour générer l'exécutable
+$(EXEC): $(OBJ)
+	@gcc $(CFLAGS) -o $(EXEC) $(OBJ)
+	@echo "Compilation de $(EXEC) terminée."
+
+# Compilation des fichiers .o
+%.o: %.c
+	@gcc $(CFLAGS) -c $< -o $@
+	@echo "Compilation de $< terminée."
+
+# Commande pour nettoyer les fichiers objets et l'exécutable
 clean:
-	$(RM) $(OBJ)   $(EXE_TEST_CHIFFRAGE_XOR)  
-#$(EXE_CBC) $(EXE_CHIFFRAGE_XOR)
+	@rm -f $(OBJ) $(EXEC)
+	@echo "Nettoyage terminé."
+
+# Commande pour forcer la recompilation complète
+rebuild: clean $(EXEC)
