@@ -1,11 +1,11 @@
 # Nom de l'exécutable
-EXEC = test_chiffrage_xor
+EXEC = sym_crypt
 
 # Options de compilation
 CFLAGS = -Wall -Wextra -Werror -pedantic
 
 # Les fichiers sources et objets
-SRC = chiffrage_xor.c test_chiffrage_xor.c
+SRC = sym_crypt.c cbc.c chiffrage_xor.c
 OBJ = $(SRC:.c=.o)
 
 # La règle principale pour générer l'exécutable
