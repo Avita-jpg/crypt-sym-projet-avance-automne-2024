@@ -5,7 +5,7 @@ EXEC = test_chiffrage_xor
 CFLAGS = -Wall -Wextra -Werror -pedantic
 
 # Les fichiers sources et objets
-SRC = chiffrage_xor.c test_chiffrage_xor.c masque_jetable.c
+SRC = chiffrage_xor.c test_chiffrage_xor.c
 OBJ = $(SRC:.c=.o)
 
 # La règle principale pour générer l'exécutable
