@@ -3,7 +3,11 @@
 /// \date mai 2020 rév 2024
 /// \brief Calculs sur les nombres premiers, génération, tests, etc.
 
-#include "dh.h"
+#include <stdio.h>  // Pour l'utilisation des fonctions d'entrée/sortie comme printf
+#include <stdlib.h> // Pour les fonctions de gestion de la mémoire et utilitaires comme malloc, free
+#include <assert.h>
+#include "dh_prime.h"
+
 long random_long(long min,long max){
 /// \brief génère un uint aléatoire entre min et max
 /// \param[in] min et max des uint
@@ -116,18 +120,19 @@ long seek_generator(long start,long p){
   return start;
 }
 
-void generate_shared_key(long min,long max){
-  /// \brief calcule un nombre premier p de Sophie Germain et un générateur du groupe p/Zp.
-  /// appelle le simulateur d'échange de clef partagée.
-  /// \returns la clef partagée
-  int cpt;
-  long premier = genPrimeSophieGermain(min,max,&cpt);
-  fprintf(outfp,"premier = %ld # nombre premier de Sophie Germain\n",premier);
-  long generateur = seek_generator(3,premier); // exemple 100
-  long ordre = puissance_mod_n (generateur, premier-1, premier); // generateur^{premier -1} (mod premier)
-  fprintf(outfp,"generateur = %ld # ordre = %ld\n",generateur,ordre);
-  assert (generateur != -1);
-}
+// void generate_shared_key(long min,long max){
+//   /// \brief calcule un nombre premier p de Sophie Germain et un générateur du groupe p/Zp.
+//   /// appelle le simulateur d'échange de clef partagée.
+//   /// \returns la clef partagée
+//   int cpt;
+//   long premier = genPrimeSophieGermain(min,max,&cpt);
+//   fprintf(outfp,"premier = %ld # nombre premier de Sophie Germain\n",premier);
+//   long generateur = seek_generator(3,premier); // exemple 100
+//   long ordre = puissance_mod_n (generateur, premier-1, premier); // generateur^{premier -1} (mod premier)
+//   fprintf(outfp,"generateur = %ld # ordre = %ld\n",generateur,ordre);
+//   assert (generateur != -1);
+// }
+
 
 long int_pow(long a, long e) {
   /// \brief puissance russe
