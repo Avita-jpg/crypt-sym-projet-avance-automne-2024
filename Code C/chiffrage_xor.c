@@ -57,7 +57,7 @@ void test_chiffrage_xor(char *fich_name, char *key){
     FILE* fich = NULL; 
 
     // On ouvre le fichier avec le message que l'on doit chiffrer
-    fich  = fopen("../script/CRYPT/tests/ref/msg2.txt", "rb");
+    fich  = fopen(fich_name, "rb");
 
     if (fich == NULL) {
         perror("Erreur lors de l'ouverture du fichier");

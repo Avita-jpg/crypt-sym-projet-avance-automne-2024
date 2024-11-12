@@ -23,10 +23,10 @@ int main(void){
     printf("---------------- Tests fonction XOR chiffrement/déchiffrement ---------------- \n\n ");
 
     // Clé qui va permettre le chiffrement
-    char *key = "rutabaga";
+    //char *key = "rutabaga";
     //char *key = "df9";
     //char *key = "adijd";
-    //char *key = "DfklEa_";
+    char *key = "DfklEa_";
 
     //test sur des textes
     test_chiffrage_xor("../script/CRYPT/tests/ref/msg2.txt", key);
