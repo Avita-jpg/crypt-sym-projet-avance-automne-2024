@@ -84,7 +84,6 @@ function test_cipher_cbc {
     else
 	RET=2
     fi
-
 }
 
 function test_decipher_cbc {
