@@ -6,9 +6,6 @@
 #include "chiffrage_xor.h"
 #include "cbc.h"
 
-//TODO ajouter module masque jettable
-//#include ""
-
 void print_utilisation() {
     printf("Usage: sym_crypt -i <input_file> -o <output_file> -k <key> -m <method> [-v <iv_file>] [-l <log_file>] [-h]\n");
     printf("Options:\n");
@@ -23,21 +20,39 @@ void print_utilisation() {
 }
 
 unsigned char * read_content(const char * filename) {
+    printf("Tentative d'ouverture du fichier : %s\n", filename); // Debug pour voir le nom du fichier
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         perror("Erreur lors de l'ouverture d'un fichier");
         exit(2);
     }
-    // obtenir taille du fichier de clé
-    fseek (file, 0, SEEK_END);
-    long size=ftell (file);
+
+    printf("Fichier ouvert. \n");
+    // obtenir taille du fichier
+    if (fseek(file, 0, SEEK_END) != 0) {
+        perror("Erreur lors de fseek pour obtenir la taille");
+        fclose(file);
+        return NULL;
+    }
+    long size = ftell (file);
+    if (size < 0) {
+        perror("Erreur lors de ftell pour obtenir la taille");
+        fclose(file);
+        return NULL;
+    }
     // revenir au debut du fichier
     rewind(file);
 
-    // On alloue un espace pour la clé, en ajoutant 1 pour le caractère de fin de chaîne
+    // On alloue de l'espace pour le contenu du fichier (+1 pour le caractère de fin de chaîne)
     unsigned char * content = (unsigned char*)malloc((size + 1) * sizeof(unsigned char));
+    if (content == NULL) {
+        perror("Erreur d'allocation mémoire pour le contenu du fichier");
+        fclose(file);
+        return NULL;
+    }
 
-    // Lecture de la clé
+    //Lecture du fichier
+    printf("Lecture du message\n");
     if (fread(content, sizeof(char), size, file) != (size_t)size) {
         perror("Erreur lors de la lecture du fichier de clé");
         free(content);
@@ -85,20 +100,22 @@ int main(int argc, char *argv[]) {
                 // log_file = optarg;
                 break;
             case 'h':
+                printf("case h \n");
                 print_utilisation();
                 exit(0);
             default:
+                printf("default \n");
                 print_utilisation();
                 exit(1);
         }
     }
 
     // Vérification des options obligatoires
-    if (!input_file || !output_file || !key || !method) {
-        fprintf(stderr, "Erreur : Les options -i, -o, -k et -m sont obligatoires.\n");
-        print_utilisation();
-        exit(3);
-    }
+    // if (!input_file || !output_file || !method || (!key && !key_file)) {
+    //     fprintf(stderr, "Erreur : Les options -i, -o, -k et -m sont obligatoires.\n");
+    //     print_utilisation();
+    //     exit(3);
+    // }
 
     // Charger le fichier de clé si nécessaire
     if (key_file) {
@@ -116,7 +133,7 @@ int main(int argc, char *argv[]) {
             free(key);
             exit(2);
         }
-    } else if (!vini_file) {
+    } else if ((strcmp(method, "cbc-crypt") == 0 || strcmp(method, "cbc-uncrypt") == 0) && (!vini_file)) {
         fprintf(stderr, "Erreur : L'option -v est obligatoire si la méthode est cbc-crypt ou cbc_uncrypt.\n");
         print_utilisation();
         free(key);
@@ -131,6 +148,7 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+    // Cas de la fonction xor
     if (strcmp(method, "xor") == 0) {
         // ouvrir fichier output
         FILE* output = fopen(output_file, "w");
@@ -148,21 +166,89 @@ int main(int argc, char *argv[]) {
         // liberation ressources et fermeture fichiers
         free(output_buffer);
         fclose(output);
-    } else if (strcmp(method, "cbc-crypt") == 0) {
+    } 
+    
+    
+    // Cas de la fonction cbc-crypt
+    else if (strcmp(method, "cbc-crypt") == 0) {
         cbc_crypt(input_file, output_file, key, vini);
-    } else if (strcmp(method, "cbc-uncrypt") == 0) {
+    } 
+    
+    // Cas de la fonction cbc-uncrypt
+    else if (strcmp(method, "cbc-uncrypt") == 0) {
         cbc_uncrypt(input_file, output_file, key, vini);
-    } else if (strcmp(method, "mask") == 0) {
-        printf("TODO (to add)\n");
-        // TODO: implémenter la fonction de chiffrement par masque
-        // mask_encrypt(input_file, output_file, key);
-    } else {
+    } 
+    
+    // Cas de la fonction mask
+    else if (strcmp(method, "mask") == 0) {
+        // ouvrir fichier output
+        FILE* output = fopen(output_file, "w");
+        if (output == NULL) {
+            perror("Erreur lors de l'ouverture d'un fichier");
+            free(key);
+            free(vini);
+            free(message);
+            exit(2);
+        }
+        // Taille message 
+        int taille = strlen((char *) message);
+        unsigned char *key = NULL;
+
+        // Vérifier si on est en mode chiffrement ou déchiffrement
+        FILE *key_file = fopen("key.temp", "r");
+        if (key_file != NULL) {
+            // Mode déchiffrement : lire la clé depuis "key.temp"
+            key = read_content("key.temp");
+            fclose(key_file);
+
+            if (key == NULL) {
+                perror("Erreur lors de la lecture de la clé temporaire");
+                free(message);
+                fclose(output);
+                exit(2);
+            }
+        } else {
+            // Création de la clé aléatoire
+            key = gen_key(taille + 1);
+            if (key == NULL) {
+                perror("Erreur lors de la génération de la clé aléatoire");
+                free(message);
+                fclose(output);
+                exit(2);
+            }
+
+            // Sauvegarde de la clé dans un fichier temporaire pour le déchiffrement
+            FILE *key_file = fopen("key.temp", "w");
+            if (key_file == NULL) {
+                perror("Erreur lors de la sauvegarde de la clé temporaire");
+                free(key);
+                free(message);
+                fclose(output);
+                exit(2);
+            }
+            fwrite(key, 1, taille, key_file);
+            fclose(key_file);
+        }
+
+        // Appel à la fonction masque_jetable
+        unsigned char * output_buffer = masque_jetable(message, key, taille);
+        // écriture
+        fwrite(output_buffer, strlen((char*)output_buffer),1,output);
+        // liberation ressources et fermeture fichiers
+        free(output_buffer);
+        fclose(output);
+
+        if (key_file != NULL && key == NULL) {
+            remove("key.temp");
+        }
+    } 
+
+    else {
         fprintf(stderr, "Erreur : Méthode de chiffrement non reconnue.\n");
         print_utilisation();
     }
 
     free(vini);
-    free(key);
     free(message);
     exit(0);
 }

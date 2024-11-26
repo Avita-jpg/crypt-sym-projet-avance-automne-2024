@@ -162,19 +162,19 @@ void cbc_uncrypt (char * nomFichEntre, char * nomFichSortie, unsigned char * cle
 
 
 
-   int main() {
+//    int main() {
     
-    unsigned char cle[] = "adijd";  
-    unsigned char vi[N]; 
+//     unsigned char cle[] = "adijd";  
+//     unsigned char vi[N]; 
     
-    memset(vi, 0, N);  
+//     memset(vi, 0, N);  
     
-    char *fichierEntree = "cbc_adijd_mini.txt";  
-    char *fichierSortie = "output_crypt.txt";    
+//     char *fichierEntree = "cbc_adijd_mini.txt";  
+//     char *fichierSortie = "output_crypt.txt";    
     
-    cbc_crypt(fichierEntree, fichierSortie, cle, vi);
+//     cbc_crypt(fichierEntree, fichierSortie, cle, vi);
 
-    printf("Chiffrement terminé. Résultat dans '%s'.\n", fichierSortie);
+//     printf("Chiffrement terminé. Résultat dans '%s'.\n", fichierSortie);
 
-    return 0;
-}
+//     return 0;
+// }

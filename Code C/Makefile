@@ -2,11 +2,10 @@
 EXEC = sym_crypt
 
 # Options de compilation
-CFLAGS = -Wall -Wextra -Werror -pedantic
+CFLAGS = -Wall -Wextra -pedantic
 
 # Les fichiers sources et objets
-SRC = chiffrage_xor.c test_chiffrage_xor.c masque_jetable.c
-
+SRC = sym_crypt.c chiffrage_xor.c masque_jetable.c cbc.c 
 OBJ = $(SRC:.c=.o)
 
 # La règle principale pour générer l'exécutable
