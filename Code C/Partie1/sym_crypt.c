@@ -75,6 +75,11 @@ int main(int argc, char *argv[]) {
     /*char *log_file = NULL;*/
     int opt;
 
+    if (argc < 9 || argc > 14) {
+        print_utilisation();
+        exit(1);
+    }
+
     // Analyse des options en ligne de commande
     while ((opt = getopt(argc, argv, "i:o:k:f:m:v:l:h")) != -1) {
         switch (opt) {
