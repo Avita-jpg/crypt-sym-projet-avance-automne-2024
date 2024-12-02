@@ -6,6 +6,30 @@
 #include "chiffrage_xor.h"
 #include "cbc.h"
 
+//fonction qui renvoie la taille du fichier 
+void prendreTaille(char *fich_name, int *taille){
+    // Ouverture du fichier à chiffrer
+    FILE* fich = NULL;
+
+    // On ouvre le fichier avec le message que l'on doit chiffrer
+    // fich  = fopen("../script/CRYPT/tests/ref/msg2.txt", "rb");
+    fich  = fopen(fich_name, "rb");
+
+    if (fich == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        exit(1);
+    }
+
+    //On prends la taille du message dans le fichier
+    fseek(fich, 0, SEEK_END);
+    int taille_fichier = ftell(fich);  // Obtenir la taille du fichier
+    rewind(fich);  // Remettre le curseur au début du fichier
+
+    *taille = taille_fichier;    
+    fclose(fich);
+}
+
+
 void print_utilisation() {
     printf("Usage: sym_crypt -i <input_file> -o <output_file> -k <key> -m <method> [-v <iv_file>] [-l <log_file>] [-h]\n");
     printf("Options:\n");
@@ -19,7 +43,7 @@ void print_utilisation() {
     printf("  -h                   : Affiche l'aide\n");
 }
 
-unsigned char * read_content(const char * filename) {
+unsigned char *read_content(const char *filename) {
     printf("Tentative d'ouverture du fichier : %s\n", filename); // Debug pour voir le nom du fichier
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
@@ -34,12 +58,13 @@ unsigned char * read_content(const char * filename) {
         fclose(file);
         return NULL;
     }
-    long size = ftell (file);
+    long size = ftell (file); //pointeur sur un long (aka la taille du fichier)
     if (size < 0) {
         perror("Erreur lors de ftell pour obtenir la taille");
         fclose(file);
         return NULL;
     }
+
     // revenir au debut du fichier
     rewind(file);
 
@@ -61,6 +86,7 @@ unsigned char * read_content(const char * filename) {
     }
     content[size] = '\0';
     fclose(file);
+    printf("Fichier fermé\n");
 
     return content;
 }
@@ -73,9 +99,12 @@ int main(int argc, char *argv[]) {
     char *method = NULL;
     char *vini_file = NULL;
     /*char *log_file = NULL;*/
+    int key_length; 
+    int vini_length;
+    int message_length;
     int opt;
 
-    if (argc < 9 || argc > 14) {
+    if (argc < 9) {
         print_utilisation();
         exit(1);
     }
@@ -125,6 +154,9 @@ int main(int argc, char *argv[]) {
     // Charger le fichier de clé si nécessaire
     if (key_file) {
         key = read_content(key_file);
+        //on récupère la taille de la clé
+        prendreTaille(key_file, &key_length);
+
         if (key == NULL) {
             exit(2);
         }
@@ -138,6 +170,8 @@ int main(int argc, char *argv[]) {
             free(key);
             exit(2);
         }
+        prendreTaille(vini_file , &vini_length); //pas forcément utile ici
+
     } else if ((strcmp(method, "cbc-crypt") == 0 || strcmp(method, "cbc-uncrypt") == 0) && (!vini_file)) {
         fprintf(stderr, "Erreur : L'option -v est obligatoire si la méthode est cbc-crypt ou cbc_uncrypt.\n");
         print_utilisation();
@@ -145,13 +179,14 @@ int main(int argc, char *argv[]) {
         exit(3);
     }
 
-    // charger message
+    // charger message + il nous faut la taille de ce message
     unsigned char * message = read_content(input_file);
     if (message == NULL) {
         free(key);
         free(vini);
         exit(2);
     }
+    prendreTaille(input_file, &message_length);
 
     // Cas de la fonction xor
     if (strcmp(method, "xor") == 0) {
@@ -165,14 +200,13 @@ int main(int argc, char *argv[]) {
             exit(2);
         }
         // appel à chiffrage_xor
-        unsigned char * output_buffer = chiffrageXor(message, key, strlen((char*)message));
+        unsigned char * output_buffer = chiffrageXor(message, key, message_length);
         // écriture
-        fwrite(output_buffer, strlen((char*)output_buffer),1,output);
+        fwrite(output_buffer, message_length,1,output);
         // liberation ressources et fermeture fichiers
         free(output_buffer);
         fclose(output);
     } 
-    
     
     // Cas de la fonction cbc-crypt
     else if (strcmp(method, "cbc-crypt") == 0) {
@@ -195,15 +229,14 @@ int main(int argc, char *argv[]) {
             free(message);
             exit(2);
         }
-        // Taille message 
-        int taille = strlen((char *) message);
+        // Taille message : message_length 
         unsigned char *key = NULL;
 
         // Vérifier si on est en mode chiffrement ou déchiffrement
         FILE *key_file = fopen("key.temp", "r");
         if (key_file != NULL) {
             // Mode déchiffrement : lire la clé depuis "key.temp"
-            key = read_content("key.temp");
+            key = read_content("key.temp"); 
             fclose(key_file);
 
             if (key == NULL) {
@@ -214,7 +247,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             // Création de la clé aléatoire
-            key = gen_key(taille + 1);
+            key = gen_key(message_length + 1);
             if (key == NULL) {
                 perror("Erreur lors de la génération de la clé aléatoire");
                 free(message);
@@ -231,14 +264,14 @@ int main(int argc, char *argv[]) {
                 fclose(output);
                 exit(2);
             }
-            fwrite(key, 1, taille, key_file);
+            fwrite(key, 1, message_length, key_file);
             fclose(key_file);
         }
 
         // Appel à la fonction masque_jetable
-        unsigned char * output_buffer = masque_jetable(message, key, taille);
+        unsigned char * output_buffer = masque_jetable(message, key, message_length);
         // écriture
-        fwrite(output_buffer, strlen((char*)output_buffer),1,output);
+        fwrite(output_buffer, message_length, 1, output);
         // liberation ressources et fermeture fichiers
         free(output_buffer);
         fclose(output);
@@ -252,8 +285,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Erreur : Méthode de chiffrement non reconnue.\n");
         print_utilisation();
     }
-
     free(vini);
     free(message);
+
     exit(0);
 }

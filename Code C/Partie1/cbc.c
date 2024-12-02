@@ -88,34 +88,34 @@ void cbc_crypt(char *nomFichEntre, char *nomFichSortie, unsigned char* cle, unsi
     unsigned char* Cinter = malloc(N * sizeof(unsigned char));
     int nbRead, nbWrite;
 
-   isError(fdE, 2);
-   isError(fdS, 2);
+    isError(fdE, 2);
+    isError(fdS, 2);
 
     for (int i = 0; i < N; i++) {
         Ci[i] = vi[i];
     }
 
     while ((nbRead = read(fdE, Bi, N)) > 0) {
-       
+
         if (nbRead < N) {
-            memset(Bi + nbRead, 0, N - nbRead);  
+            memset(Bi + nbRead, ' ', N - nbRead);
         }
 
-        
+
         for (int i = 0; i < N; i++) {
             Cinter[i] = Bi[i] ^ Ci[i];
         }
 
-        
+
         for (int i = 0, j = 0; i < N; i++, j = (j + 1) % tailleUnsigned(cle)) {
             Ci[i] = Cinter[i] ^ cle[j];
         }
 
-        
+
         nbWrite = write(fdS, Ci, N);
         isError(nbWrite, 0);
     }
-    
+
     isError(nbRead, 1);
     close(fdE);
     close(fdS);
@@ -139,7 +139,7 @@ void cbc_uncrypt (char * nomFichEntre, char * nomFichSortie, unsigned char * cle
     while ((nbRead=read(fdE,Ci,N*sizeof(unsigned char)))){
         CiDecrypt=decrypt(Ci,cle,N/*&CiDecrypt*/);
         if (isFirst){
-            Bi=decrypt(CiDecrypt,vi,N/*&Bi*/); 
+            Bi=decrypt(CiDecrypt,vi,N/*&Bi*/);
         } else {
             Bi=decrypt(CiDecrypt,Cinter,N/*&Bi*/);
         }
@@ -161,20 +161,19 @@ void cbc_uncrypt (char * nomFichEntre, char * nomFichSortie, unsigned char * cle
 }
 
 
+/*
+int main(int argc, char* argv[]) {
 
-//    int main() {
-    
-//     unsigned char cle[] = "adijd";  
-//     unsigned char vi[N]; 
-    
-//     memset(vi, 0, N);  
-    
-//     char *fichierEntree = "cbc_adijd_mini.txt";  
-//     char *fichierSortie = "output_crypt.txt";    
-    
-//     cbc_crypt(fichierEntree, fichierSortie, cle, vi);
+    unsigned char cle[] = "S|fu|=im+apngv&xRmx";
+    unsigned char vi[N]="azertyuiopqsdfgh";
 
-//     printf("Chiffrement terminé. Résultat dans '%s'.\n", fichierSortie);
 
-//     return 0;
-// }
+
+
+
+    //cbc_crypt(argv[1], argv[2], cle, vi);
+    cbc_uncrypt(argv[1],argv[2],cle,vi);
+
+
+    return 0;
+}*/
