@@ -3,147 +3,178 @@
 #include <string.h>
 #include <ctype.h>
 
-#define LONGUEUR_MAX_CLE 10
 #define NOMBRE_CARACTERES 62
 
-//ppour respecter le format de la cle
+// Liste des caractères valides pour la clé pret au debut (plusieurs utilisations )
+const char caracteres[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 int est_affichable(char c) {
     return (isalpha(c) || isdigit(c) || ispunct(c) || isspace(c));
 }
 
+// fonction pour obtenir les caractères valides pour un indice donné de la clé
 int obtenir_caracteres_valides(char* msg_chiffre, int longueur_cle, int indice, char* clef_candidats) {
-    const char caracteres[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     int nb_caracteres_valides = 0;
-//soucis ici c que dans aucune des cle il met des chiffres que des lettre
-    // parcourir caracteres candidats
+    int msg_len = strlen(msg_chiffre);
+
     for (int i = 0; i < strlen(caracteres); i++) {
         char c_candidat = caracteres[i];
         int valide = 1;
 
-        // debug
-        printf("\t caractere étudié: %c\n", c_candidat);
-        // end debug
-
-        // parcourir msg en faisants des sauts de longueur =  longueur_cle
-        for (int j = indice; j < strlen(msg_chiffre); j += longueur_cle) {
+        for (int j = indice; j < msg_len; j += longueur_cle) {
             char caractere_message = msg_chiffre[j];
             char decrypted_char = caractere_message ^ c_candidat;
 
-            // debug
-            int res = est_affichable(decrypted_char);
-            printf("\t\t message[%d] = %c", j, msg_chiffre[j]);
-            if (res) {
-                printf(", %c xor %c = %c \n", msg_chiffre[j], c_candidat, decrypted_char);
-            }
-            else {
-                printf(", %c xor %c (= %c) non affichable\n", msg_chiffre[j], c_candidat, decrypted_char);
-            }
-            // end debug
-
-            //inclus
             if (!est_affichable(decrypted_char)) {
                 valide = 0;
                 break;
             }
         }
 
-
         if (valide) {
             clef_candidats[nb_caracteres_valides] = c_candidat;
             nb_caracteres_valides++;
         }
     }
-    clef_candidats[nb_caracteres_valides] = '\0';
+    clef_candidats[nb_caracteres_valides] = '\0'; // Terminer la chaine pour pas rajouter 
     return nb_caracteres_valides;
 }
 
-void cracker_message(char* msg_chiffre, int l_cle) {
-    // tableau contenant les caracteres candidats pour chaque caractere de la clef
-    char clef_candidats[l_cle][NOMBRE_CARACTERES + 1];
-    // tableau contenant le nb de candidats par caractere de la clef
-    int len_candidats[l_cle];
-
+char** generer_combinations(char** clef_candidats, int* len_candidats, int longueur_cle, int* nb_clefs_retour) {
     int nb_clefs = 1;
-   
-    // avoir candidats pour chaque caractere de la clef
-    for (int i = 0; i < l_cle; i++) {
-        // printf("Calcul candidats de clef[%d]:\n ", i);
-        len_candidats[i] = obtenir_caracteres_valides(msg_chiffre, l_cle, i, clef_candidats[i]);
-        printf("Caractères valides pour clef[%d] : %s\n", i, clef_candidats[i]);
-
-        // calcul du nombre total de clefs candidates
-        nb_clefs = nb_clefs * len_candidats[i];
+    for (int i = 0; i < longueur_cle; i++) {
+        nb_clefs *= len_candidats[i];
     }
 
-    // calcul produit cartesien
-    char clefs[nb_clefs][l_cle];
-
-    int indice_courant [l_cle]; // index courant dans chaque tableau de caracteres candidats
-    for (int i = 0; i < l_cle; i++) {
-        indice_courant[i] = 0;
+    *nb_clefs_retour = nb_clefs;
+    char** clefs = malloc(nb_clefs * sizeof(char*));
+    for (int i = 0; i < nb_clefs; i++) {
+        clefs[i] = malloc((longueur_cle + 1) * sizeof(char));
     }
 
-    // int nb_clefs = 6;
-    // char clefs[nb_clefs][len_clef + 1];
+    int* indices_courants = calloc(longueur_cle, sizeof(int));
 
     for (int i = 0; i < nb_clefs; i++) {
-        for (int j = 0; j < l_cle; j++) {
-            clefs[i][j] = clef_candidats[j][indice_courant[j]];
+        for (int j = 0; j < longueur_cle; j++) {
+            clefs[i][j] = clef_candidats[j][indices_courants[j]];
         }
-        clefs[i][l_cle] = '\0';
-        printf("%s ", clefs[i]);
+        clefs[i][longueur_cle] = '\0';
 
-        // mise à jour des indices_courants
-        // on commence à la fin
-        for (int k = l_cle - 1; k >= 0; k--) {
-            // (un peu comme if hasnext() then next())
-            if (indice_courant[k] + 1 < len_candidats[k]) {
-                indice_courant[k]++;
+        for (int k = longueur_cle - 1; k >= 0; k--) {
+            if (indices_courants[k] + 1 < len_candidats[k]) {
+                indices_courants[k]++;
+                break;
             } else {
-                // sinon réinitialiser
-                indice_courant[k] = 0;
+                indices_courants[k] = 0;
             }
         }
-        printf("\n");
     }
 
-    // end calcul produit cartesien
+    free(indices_courants);
+    return clefs;
+}
 
+// ffonction  pour cracker le message
+char** cracker_message(char* msg_chiffre, int longueur_cle, int* nb_clefs_retour) {
+    // Allocation dynamique pour clef_candidats car finalstatique 
+    char** clef_candidats = malloc(longueur_cle * sizeof(char*));
+    for (int i = 0; i < longueur_cle; i++) {
+        clef_candidats[i] = malloc((NOMBRE_CARACTERES + 1) * sizeof(char));
+    }
 
-//     printf("Essai de toutes les combinaisons possibles :\n");
-//     for (int i = 0; i < strlen(clef_candidats[0]); i++) {
-//         for (int j = 0; j < strlen(clef_candidats[1]); j++) {
-//         for (int k = 0; k < strlen(clef_candidats[2]); k++) {
-//             char tentative_clef[l_cle + 1];
-//                 tentative_clef[0] = clef_candidats[0][i];
-//                 tentative_clef[1] = clef_candidats[1][j];
-//                 tentative_clef[2] = clef_candidats[2][k];
-//                 tentative_clef[l_cle] = '\0';
-//
-//
-//                 int valide = 1;
-//                 for (int l = 0; l < strlen(msg_chiffre); l++) {
-//                     char decrypted_char = msg_chiffre[l] ^ tentative_clef[l % l_cle];
-//                     if (!est_affichable(decrypted_char)) {
-//                         valide = 0;
-//                         break;
-//                     }
-//                 }
-//
-//
-//                 if (valide) {
-//                     // printf("Clé candidate valide : %s\n", tentative_clef);
-//                 }
-//             }
-//         }
-//     }
+    int* len_candidats = malloc(longueur_cle * sizeof(int));
+    for (int i = 0; i < longueur_cle; i++) {
+        len_candidats[i] = obtenir_caracteres_valides(msg_chiffre, longueur_cle, i, clef_candidats[i]);
+        printf("Caractères valides pour clef[%d] : %s\n", i, clef_candidats[i]);
+    }
+
+  
+    char** clefs = generer_combinations(clef_candidats, len_candidats, longueur_cle, nb_clefs_retour);
+
+    // Libérer la mémoire des candidats
+    for (int i = 0; i < longueur_cle; i++) {
+        free(clef_candidats[i]);
+    }
+    free(clef_candidats);
+    free(len_candidats);
+
+    return clefs;
+}
+unsigned char *read_content(const char *filename) {
+    printf("Tentative d'ouverture du fichier : %s\n", filename); // Debug pour voir le nom du fichier
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Erreur lors de l'ouverture d'un fichier");
+        exit(2);
+    }
+
+    printf("Fichier ouvert. \n");
+    // obtenir taille du fichier
+    if (fseek(file, 0, SEEK_END) != 0) {
+        perror("Erreur lors de fseek pour obtenir la taille");
+        fclose(file);
+        return NULL;
+    }
+    long size = ftell (file); //pointeur sur un long (aka la taille du fichier)
+    if (size < 0) {
+        perror("Erreur lors de ftell pour obtenir la taille");
+        fclose(file);
+        return NULL;
+    }
+
+    // revenir au debut du fichier
+    rewind(file);
+
+    // On alloue de l'espace pour le contenu du fichier (+1 pour le caractère de fin de chaîne)
+    unsigned char * content = (unsigned char*)malloc((size + 1) * sizeof(unsigned char));
+    if (content == NULL) {
+        perror("Erreur d'allocation mémoire pour le contenu du fichier");
+        fclose(file);
+        return NULL;
+    }
+
+    //Lecture du fichier
+    printf("Lecture du message\n");
+    if (fread(content, sizeof(char), size, file) != (size_t)size) {
+        perror("Erreur lors de la lecture du fichier de clé");
+        free(content);
+        fclose(file);
+        return NULL;
+    }
+    content[size] = '\0';
+    fclose(file);
+    printf("Fichier fermé\n");
+
+    return content;
 }
 
 int main() {
-    char msg_chiffre[] = "s(/1& !";
-    int l_cle = 3;
+    
+    unsigned char* msg_chiffre=read_content("crypt.txt");
+    int longueur_cle;
 
-    cracker_message(msg_chiffre, l_cle);
+    printf("Entrez la longueur de la clé (1 à 10) : ");
+    scanf("%d", &longueur_cle);
+
+    if (longueur_cle < 1 || longueur_cle > 10) {
+        printf("Longueur invalide. Elle doit être entre 1 et 10.\n");
+        return 1;
+    }
+    //pour les autres crakcs prets 
+    int nb_clefs;
+    char** clefs_candidates = cracker_message((char *)msg_chiffre, longueur_cle, &nb_clefs);
+
+    printf("\nClés candidates générées (%d) :\n", nb_clefs);
+    for (int i = 0; i < nb_clefs; i++) {
+        printf("%s\n", clefs_candidates[i]);
+    }
+
+   //fini segmentation fault 
+    for (int i = 0; i < nb_clefs; i++) {
+        free(clefs_candidates[i]);
+    }
+    free(clefs_candidates);
+    free(msg_chiffre);
 
     return 0;
 }
