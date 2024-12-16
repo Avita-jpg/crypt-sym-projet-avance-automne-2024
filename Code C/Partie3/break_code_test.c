@@ -31,7 +31,7 @@ int main (int argc, char* argv[]){
   //   exit(1);
   // } 
 
-  // char cle[6]="gf1u2";
+  // char cle[4]="fd4";
   // char crypted[tailleF+1];
   // decrypt (message,cle,tailleF,crypted);
 
@@ -61,7 +61,7 @@ int main (int argc, char* argv[]){
   long tailleF = getFileSize(argv[1]); //very important
   printf("tailleF = %ld\n",tailleF);
   unsigned char message[tailleF]; //!!unsigned
-  if (read(fd,message,tailleF*sizeof(char))<0){
+  if (read(fd,message,tailleF*sizeof(unsigned char))<0){
     perror("read fail");
     exit(1);
   } 
@@ -70,22 +70,22 @@ int main (int argc, char* argv[]){
   int longueurCle = atoi(argv[2]);
 
   //partie 1
-  printf("avant crack1\n");
+  // printf("avant crack1\n");
   char ** cleCrack1 = cracker_message(message,longueurCle,&nbCles,tailleF); //ajout tailleF
   
   //partie 2
   int nbClesC2;
-  printf("avant crack2\n");
+  // printf("avant crack2\n");
   printf("nbCles = %d\n",nbCles);
   char ** cleCrack2 = break_code_c2 (cleCrack1,(unsigned char*)message,nbCles,tailleF,&nbClesC2);
   
 
   //partie 3
-  printf("avant for dans main partie 3\n");
+  // printf("avant for dans main partie 3\n");
   char cleFinale[CARAMAX];
 
-  printf("avant crack3\n");
-  crack_code_c3 (argv[1],cleCrack2,argv[3],nbClesC2,cleFinale,longueurCle,1);
+  // printf("avant crack3\n");
+  crack_code_c3 (argv[1],cleCrack2,argv[3],nbClesC2,cleFinale,longueurCle,1,NULL);
 
   //résultat final
   printf("cle finale : ");
