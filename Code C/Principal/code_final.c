@@ -329,6 +329,7 @@ void execute_crack(char *input_file, const char *out, int length, char *dictiona
     
     FILE  * output = fopen(out, "w");
     fprintf(output, "%s", cleFinale);
+    fclose(output);
     // int
     // unsigned char *msg_chiffre = read_file_content(in, NULL);
 
