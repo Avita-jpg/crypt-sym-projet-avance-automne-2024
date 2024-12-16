@@ -1,0 +1,5 @@
+Programme principal lancé.
+Erreur : Méthode de chiffrement non supportée.
+Commande exécutée : encrypt.
+Commande inconnue exécutée.
+Erreur : Impossible d'ouvrir le fichier.
